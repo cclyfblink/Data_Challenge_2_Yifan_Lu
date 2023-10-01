@@ -1,0 +1,139 @@
+---
+title: "Data Challenge 2"
+author: "Yifan Lu"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+    fig_height: 4.5
+    fig_width: 8
+  pdf_document:
+    fig_height: 3.5
+    fig_width: 3.5
+  word_document:
+    toc: no
+---
+https://github.com/cclyfblink/Data_Challenge_2_Yifan_Lu
+```{r}
+## load in the required libraries 
+library(readr)
+library(readxl)
+library(tidyverse)
+library(here)
+library(janitor)
+
+## disable scientific notation
+options(scipen = 999)
+```
+
+## Problem 1
+```{r}
+# Read in the data
+mr_trash_wheel <- read_excel("data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "Mr. Trash Wheel") %>%
+    clean_names() %>%
+    filter(!is.na(dumpster)) %>%
+    mutate(wheel = "Mr. Trash Wheel") %>%
+    select(-c(x15, x16, x17, homes_powered, weight_tons, volume_cubic_yards))
+
+prof_trash_wheel <- read_excel("data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "Professor Trash Wheel") %>%
+    clean_names() %>%
+    filter(!is.na(dumpster)) %>%
+    mutate(wheel = "Professor Trash Wheel") %>% 
+    select(-c(homes_powered, weight_tons, volume_cubic_yards))
+
+capt_trash_wheel <- read_excel("data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "Captain Trash Wheel") %>%
+    clean_names() %>%
+    filter(!is.na(dumpster)) %>%
+    mutate(wheel = "Captain Trash Wheel") %>% 
+    select(-c(homes_powered, weight_tons, volume_cubic_yards))
+
+# Combine all data
+all_trash_wheels <- bind_rows(mr_trash_wheel, prof_trash_wheel, capt_trash_wheel)
+
+# Pivot to long format
+all_trash_wheels <- pivot_longer(all_trash_wheels, 
+                                 c("plastic_bottles",
+                                   "polystyrene",
+                                   "cigarette_butts",
+                                   "glass_bottles",
+                                   "grocery_bags",
+                                   "chip_bags",
+                                   "sports_balls",
+                                   "plastic_bags"),
+                                 names_to = "trash_type", values_to = "number")
+
+# Format the trash_type column
+all_trash_wheels$trash_type <- str_replace_all(all_trash_wheels$trash_type, "_", " ") %>%
+    str_to_title()
+
+# Filter and summaries for June 2018
+all_trash_wheels_June_2018 <- all_trash_wheels %>%
+    filter(month == "June" & year == 2018) %>%
+    group_by(wheel, trash_type) %>%
+    summarise(total = sum(number))
+
+# Plot
+ggplot(all_trash_wheels_June_2018, aes(x = total, y = wheel, fill = wheel)) +
+    geom_bar(stat = "identity") +
+    facet_wrap(~trash_type, scales = "free") +
+    theme(axis.text.y = element_blank()) +
+    labs(x = "Amount of Trash", y = "Trash Wheel", title = "Trash Collected by Each Wheel in June 2018")
+```
+
+## Problem 2
+```{r}
+snp <- read_csv(here("data/snp.csv"))
+unemployment <- read_csv(here("data/unemployment.csv"))
+
+snp$date <- snp$date %>%
+    mdy()
+snp$date <- ifelse(year(snp$date) > 2015, snp$date - years(100), snp$date) %>% 
+    as.Date()
+snp <- snp %>%
+    mutate(year = year(date),
+           month = month(date))
+
+unemployment <- unemployment %>%
+    pivot_longer(cols = c(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec),
+                 names_to = "Month",
+                 values_to = "rate") %>%
+    mutate(date = mdy(paste(Month, 1, Year)))
+df <- inner_join(snp, unemployment, by = join_by(date))
+
+coeff <- 0.005
+df %>%
+    ggplot(aes(x = date)) +
+    geom_line(aes(y = close), color = "red") +
+    geom_line(aes(y = rate/coeff), color = "blue") +
+    scale_y_continuous(
+        # Features of the first axis
+        name = "SNP Closing Prices",
+        # Add a second axis and specify its features
+        sec.axis = sec_axis(~.*coeff, name="Unemployment Rate")
+        ) +
+    labs(x = "Date",
+         title = "Red: S&P Average VS Blue: Unemployment Rate")
+```
+
+## Problem 3
+```{r}
+# Create a new data frame called snp_average
+snp_average <- snp %>%
+    group_by(year, month) %>%
+    summarise(mean_close = mean(close, na.rm = TRUE)) %>%
+    ungroup() %>%
+    mutate(date = mdy(paste(month, 1, year)))
+unemployment_snp <- inner_join(snp_average, unemployment, by = join_by(date)) %>%
+    filter(year >= 2000)
+
+unemployment_snp %>%
+    ggplot(aes(x = mean_close, y = rate, color = year)) +
+    geom_point() +
+    labs(x = "S&P Average Closing Price", y = "Unemployment Rate",
+         title = "S&P Average Closing Price vs Unemployment Rate (2000 and onwards)",
+         subtitle = "Each point represents a month",
+         color = "Year")
+```
+
+## Problem 4
