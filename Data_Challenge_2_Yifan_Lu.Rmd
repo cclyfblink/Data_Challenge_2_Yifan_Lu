@@ -78,7 +78,7 @@ ggplot(all_trash_wheels_June_2018, aes(x = total, y = wheel, fill = wheel)) +
     geom_bar(stat = "identity") +
     facet_wrap(~trash_type, scales = "free") +
     theme(axis.text.y = element_blank()) +
-    labs(x = "Amount of Trash", y = "Trash Wheel", title = "Trash Collected by Each Wheel in June 2018")
+    labs(x = "Amount of Trash", y = "Trash Wheel", title = "Trash Collected by Each Wheel in June 2018", fill = "Wheel Type")
 ```
 
 ## Problem 2
