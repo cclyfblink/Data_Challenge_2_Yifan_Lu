@@ -108,7 +108,7 @@ df %>%
     geom_line(aes(y = rate/coeff), color = "blue") +
     scale_y_continuous(
         # Features of the first axis
-        name = "SNP Closing Prices",
+        name = "S&P Closing Prices",
         # Add a second axis and specify its features
         sec.axis = sec_axis(~.*coeff, name="Unemployment Rate")
         ) +
@@ -137,3 +137,8 @@ unemployment_snp %>%
 ```
 
 ## Problem 4
+
+*Answer:*\
+In plot 2: We observed that the unemployment rate line oscillates up and down at around 10 year basis. It achieves its maximum at around year 1983. The S&P average line shows a generally upward trend. Two major recession occurred at year 2001 and 2008, but it all recovered a few years after that and achieves its maximum at around year 2015.
+
+In plot 3: We observed that the dots can be divided into two groups: all represents a negative relationship between unemployment rate and S&P average closing price. It means that when S&P average price increases, the unemployment rate will drop and vice versa. The two groups may indicates two economic cycles with different S&P average to unemployment rate ratios but similar trends.
